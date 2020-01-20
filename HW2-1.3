@@ -1,0 +1,16 @@
+#----1.3 Vanguard Funds-----
+#i---Calculate Alphas and Betas
+funds <- read.csv("vanguard.csv")
+len <- dim(funds)[1]
+RetSPX<-diff(log(funds$SPX))*52-funds$TBILL[2:(len)]/100
+RetBND<-diff(log(funds$BND))*52-funds$TBILL[2:(len)]/100
+Retfunds<-
+  52*log(funds[2:len,2:(dim(funds)[2]-2)])-
+  52*log(funds[1:len-1,2:(dim(funds)[2]-2)])-
+  funds$TBILL[2:(len)]/100
+
+print(CAPM <- lm(as.matrix(Retfunds) ~ RetSPX))
+plot(CAPM$coeff[2,], CAPM$coeff[1,],
+     ylab="alpha", xlab="beta", col=0)
+text(x=CAPM$coeff[2,], y=CAPM$coeff[1,], labels=names(funds)
+     [2:(dim(funds)[2]-2)], col=2)
