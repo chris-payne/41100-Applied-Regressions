@@ -1,0 +1,31 @@
+#HW7 Q3
+# indicates hw Question number
+## indicates comment
+### indicates question
+
+# i Examine the data for outlier patterns in the weather and remove them. 
+##  Give clear justification for each data point removed.
+
+setwd(dir = '/Users/ChrisMacAir/Documents/Chicago Booth/2019Q2/Regressions/WK9')
+BikeData = read.csv(file = "bikeSharing.csv")
+
+# ii First split the data into training and testing samples (size and sampling scheme is up to you).
+# ii We won’t use the test set until the very end.
+
+BikeData$logTotal <- log(BikeData$count)
+### you need to get rid of the "label" column, and ViolentCR Does this apply to our data??
+### Time seems to matter. Do I want to get rid of count like we got rid of violent CR??
+XY <- BikeData[,-(10:12)] 
+## create training and validation sets
+index <- sample(1:nrow(BikeData),1000)
+training <- XY[index,] 
+validation <- XY[-index,]
+
+## define the scope from small model to big
+null <- lm(logTotal ~ 1, data=training)
+full <- lm(logTotal ~ ., data=training)
+## build a regression model with the BIC
+fwdBIC <- step(null, scope=formula(full), direction="forward", k=log(1000))
+### why is this messing up? Followed example exactly...
+
+# iii Create dummy variables for each hour (24 total).
