@@ -9,23 +9,82 @@
 setwd(dir = '/Users/ChrisMacAir/Documents/Chicago Booth/2019Q2/Regressions/WK9')
 BikeData = read.csv(file = "bikeSharing.csv")
 
+## weather
+BikeData$weather<-as.factor(BikeData$weather)
+summary(BikeData$weather)
+wxcriteria <- BikeData$weather != 4
+
+df <- BikeData[wxcriteria, ]
+
+## season: Make it a factor
+BikeData$season <- as.factor(BikeData$season)
+summary(BikeData$season)
+
+## holiday: Make it a factor
+BikeData$holiday <- as.factor(BikeData$holiday)
+summary(BikeData$holiday)
+
+## workingday: Make it a factor
+BikeData$workingday <- as.factor(BikeData$workingday)
+summary(BikeData$workingday)
+
+## Check the model
+dim(BikeData)
+dim(df)
+summary(BikeData)
+summary(df)
+
 # ii First split the data into training and testing samples (size and sampling scheme is up to you).
 # ii We won’t use the test set until the very end.
 
-BikeData$logTotal <- log(BikeData$count)
+#BikeData$logTotal <- log(BikeData$count)  ## For use later
 ### you need to get rid of the "label" column, and ViolentCR Does this apply to our data??
 ### Time seems to matter. Do I want to get rid of count like we got rid of violent CR??
-XY <- BikeData[,-(10:12)] 
+XY <- df[,-(12)] 
 ## create training and validation sets
-index <- sample(1:nrow(BikeData),1000)
+index <- sample(1:nrow(df),8000)
 training <- XY[index,] 
 validation <- XY[-index,]
+plot(training)
 
 ## define the scope from small model to big
-null <- lm(logTotal ~ 1, data=training)
-full <- lm(logTotal ~ ., data=training)
+#null <- lm(logTotal ~ 1, data=training) ## next problem
+#full <- lm(logTotal ~ ., data=training) ## next problem
 ## build a regression model with the BIC
-fwdBIC <- step(null, scope=formula(full), direction="forward", k=log(1000))
+#fwdBIC <- step(null, scope=formula(full), direction="forward", k=log(8000))  ## next problem
 ### why is this messing up? Followed example exactly...
 
 # iii Create dummy variables for each hour (24 total).
+## 2 models. One for registered and non-registered users. 
+## Compare to non-counterparts in season. Can use string variables. 
+## fwdBIC step (response) on count, on registered.
+## use model matrix??? ## or create factor for the hours
+df$datetime <- as.factor(df$datetime)
+Hour <- substr(df$datetime, 12,13)
+DataHour <- as.factor(Hour)
+summary(DataHour)
+
+df1 <- df[DataHour,]
+XY1 <- df1[,(-12)]
+
+#Casual 
+plot(XY1$hour, XY1$casual, xlab = "Hour", ylab="Casual Riders", 
+     main="Casual Riders per Hour")
+
+nullcas <- lm(casual ~ 1, data=XY1)
+fullcas <- lm(casual ~ . - hour - count - season,data=XY1)
+fullcasint<-lm(casual ~ . - hour - count - season + 
+                 (. - hour - count - season)^2, data=XY1)
+fwdBICcas <- step(nullcas, scope=formula(fullcas),
+                  direction="forward", k=log(nrow(XY1)))
+fwdBICcasint <- step(nullcas, scope=fromula(fullcasint),
+                     direction="forward", k=log(nrow(XY1)))
+
+# iv Create a small set of dummies for logical groups of hours.
+# First condider only main effects, then all interactions
+
+
+
+# v) Use the test data to compare out of sample MSE performance of all the models.Discuss findings.
+
+
