@@ -28,6 +28,10 @@ summary(BikeData$holiday)
 BikeData$workingday <- as.factor(BikeData$workingday)
 summary(BikeData$workingday)
 
+## windspeed: square root transformation
+BikeData$windspeed <- sqrt(BikeData$windspeed)
+summary(BikeData$windspeed)
+
 ## Check the model
 dim(BikeData)
 dim(df)
@@ -64,27 +68,50 @@ Hour <- substr(df$datetime, 12,13)
 DataHour <- as.factor(Hour)
 summary(DataHour)
 
-df1 <- df[DataHour,]
-XY1 <- df1[,(-12)]
+df1 = df
+df1$hour = DataHour
+XY1 <- df1[,(-12)][,-10][,-1]
+
+XY2 <- df1[,(-11:-12)][,-1]
+nullc <- lm(casual ~ 1, data=XY2)
+fullc <- lm(casual ~ ., data=XY2)
+fullcint <- lm(casual ~ . + .^2, data=XY2)
+fwdBICc <- step(nullc, scope=formula(fullc), direction="forward", k=log(nrow(XY2)))
+fwdBICcint <- (step(nullc, scope=formula(fullcint), direction="forward", k=log(nrow(XY2))))
+BestCasual <- lm(casual ~ hour + atemp + workingday + humidity + season + weather + 
+       holiday + hour:workingday + hour:atemp + atemp:workingday + 
+       atemp:season + humidity:season + hour:humidity + workingday:humidity + 
+       atemp:humidity + workingday:season + season:holiday + atemp:weather + 
+       humidity:holiday, data=XY2)
 
 #Casual 
-plot(XY1$hour, XY1$casual, xlab = "Hour", ylab="Casual Riders", 
+plot(XY2$hour, XY2$casual, xlab = "Hour", ylab="Casual Riders", 
      main="Casual Riders per Hour")
-
-nullcas <- lm(casual ~ 1, data=XY1)
-fullcas <- lm(casual ~ . - hour - count - season,data=XY1)
-fullcasint<-lm(casual ~ . - hour - count - season + 
-                 (. - hour - count - season)^2, data=XY1)
-fwdBICcas <- step(nullcas, scope=formula(fullcas),
-                  direction="forward", k=log(nrow(XY1)))
-fwdBICcasint <- step(nullcas, scope=fromula(fullcasint),
-                     direction="forward", k=log(nrow(XY1)))
-
-# iv Create a small set of dummies for logical groups of hours.
-# First condider only main effects, then all interactions
+abline (BestCasual)
 
 
+## Unneeded
+# nullcas <- lm(casual ~ 1, data=XY1)
+# fullcas <- lm(casual ~ . - hour - season,data=XY1)
+# fullcasint<-lm(casual ~ . - hour - season + 
+#                  (. - hour - season)^2, data=XY1)
+# fwdBICcas <- step(nullcas, scope=formula(fullcas),
+#                   direction="forward", k=log(nrow(XY1)))
+# fwdBICcasint <- step(nullcas, scope=formula(fullcasint),
+#                      direction="forward", k=log(nrow(XY1)))
 
-# v) Use the test data to compare out of sample MSE performance of all the models.Discuss findings.
+#Registered
+nullreg <- lm(registered ~ 1, data=XY1)
+fullreg <- lm(registered ~ ., data=XY1)
+fullregint <- lm(registered ~ . + .^2, data=XY1)
+fwdBICreg <- step(nullreg, scope=formula(fullreg), direction="forward", k=log(nrow(XY1)))
+fwdBICregint <- (step(nullreg, scope=formula(fullregint), direction="forward", k=log(nrow(XY1))))
+
+BestRegistered <- lm(registered ~ hour + atemp + season + weather + workingday + humidity + 
+                       temp, data=XY1)
+
+plot(XY1$hour, XY1$registered, xlab = "Hour", ylab="Registered Riders", 
+     main="Registered Riders per Hour")
+abline (BestRegistered)
 
 
